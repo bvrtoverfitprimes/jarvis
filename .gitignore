@@ -205,3 +205,22 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Project specific
+logs/
+*.log
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Local model assets and caches (do not commit)
+qwen-model/
+models/vosk-model-*/
+models/*.zip
+
+# Common ML caches
+.cache/
+hf_cache/
+transformers_cache/
+huggingface_cache/
