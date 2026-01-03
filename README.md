@@ -89,6 +89,13 @@ This repo intentionally does not commit large model assets.
 
 Both are ignored by `.gitignore` so you do not accidentally commit large files.
 
+### MediaPipe task files
+
+The MediaPipe `.task` files are small and are committed to the repo.
+
+- Runtime expectation: `mouse_control.py` loads `hand_landmarker.task` and `face_landmarker.task` from the same folder as the script (repo root in the default layout).
+- Organization: copies are also stored under `assets/mediapipe/` for clarity.
+
 ## Troubleshooting
 
 - Camera not found: ensure a camera is connected and not locked by another app. Some systems expose cameras on a different index; the mouse process scans several indices.
@@ -102,4 +109,10 @@ Both are ignored by `.gitignore` so you do not accidentally commit large files.
 - `mouse_control.py`: camera based mouse control and gestures
 - `live_speech_to_text.py`: standalone offline STT utility (also useful for downloading the Vosk model)
 - `face_landmarker.task`, `hand_landmarker.task`: MediaPipe task files
+
+Supporting files:
+
+- `assets/mediapipe/`: organized copies of the MediaPipe `.task` files
+- `pyproject.toml`: minimal project metadata/config (does not change runtime)
+- `.editorconfig`: consistent formatting rules across editors
 

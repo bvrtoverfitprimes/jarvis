@@ -1,0 +1,8 @@
+[project]
+name = "jarvis"
+version = "0.0.0"
+description = "Offline voice assistant with optional camera-based mouse control."
+requires-python = ">=3.10"
+
+[tool.ruff]
+line-length = 100
