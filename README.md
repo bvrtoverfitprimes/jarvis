@@ -58,8 +58,6 @@ After that, Jarvis starts listening.
 
 ### Wake word
 
-Say:
-
 - Jarvis
 - Hey Jarvis
 
@@ -80,28 +78,6 @@ Mouse control runs in the background when using `united_run.py`.
 - Open palm (high five) triggers a full shutdown
 - Fist triggers Alt+Tab
 
-## What gets downloaded locally
-
-This repo intentionally does not commit large model assets.
-
-- Vosk model goes under `models/`
-- The LLM weights download into `qwen-model/` on first run
-
-Both are ignored by `.gitignore` so you do not accidentally commit large files.
-
-### MediaPipe task files
-
-The MediaPipe `.task` files are small and are committed to the repo.
-
-- Runtime expectation: `mouse_control.py` loads `hand_landmarker.task` and `face_landmarker.task` from the same folder as the script (repo root in the default layout).
-- Organization: copies are also stored under `assets/mediapipe/` for clarity.
-
-## Troubleshooting
-
-- Camera not found: ensure a camera is connected and not locked by another app. Some systems expose cameras on a different index; the mouse process scans several indices.
-- Microphone issues: check Windows input device settings and permissions.
-- Typing or hotkeys not working: try running the terminal as Administrator if the target app is elevated.
-
 ## Repo layout
 
 - `united_run.py`: starts mouse control and Jarvis, waits for readiness, then starts listening
@@ -115,4 +91,3 @@ Supporting files:
 - `assets/mediapipe/`: organized copies of the MediaPipe `.task` files
 - `pyproject.toml`: minimal project metadata/config (does not change runtime)
 - `.editorconfig`: consistent formatting rules across editors
-
