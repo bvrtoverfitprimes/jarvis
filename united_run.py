@@ -154,11 +154,33 @@ def main() -> int:
     env["JARVIS_START_FILE"] = jarvis_start
     env["JARVIS_SHUTDOWN_FILE"] = jarvis_shutdown
 
+    # Ensure early and frequent log flushes (useful during long model downloads).
+    env.setdefault("PYTHONUNBUFFERED", "1")
+
+    def _get_timeout_s(env_name: str, default_s: float) -> float:
+        try:
+            v = float(env.get(env_name, ""))
+            if v <= 0:
+                return default_s
+            return v
+        except Exception:
+            return default_s
+
+    jarvis_ready_timeout_s = _get_timeout_s("JARVIS_READY_TIMEOUT_S", 1800.0)
+    mouse_ready_timeout_s = _get_timeout_s("JARVIS_MOUSE_READY_TIMEOUT_S", 300.0)
+
     jarvis_log = open(jarvis_log_path, "ab", buffering=0)
-    jarvis_proc = subprocess.Popen([sys.executable, jarvis_script], env=env, stderr=jarvis_log)
+    # Capture both stdout/stderr to the log file so readiness failures have actionable output.
+    jarvis_proc = subprocess.Popen(
+        [sys.executable, "-u", jarvis_script],
+        env=env,
+        stdout=jarvis_log,
+        stderr=jarvis_log,
+        creationflags=creationflags,
+    )
 
     try:
-        if not _wait_for_file(jarvis_model_ready, jarvis_proc, timeout_s=300.0):
+        if not _wait_for_file(jarvis_model_ready, jarvis_proc, timeout_s=jarvis_ready_timeout_s):
             print("Jarvis failed to become ready.")
             try:
                 print(f"Jarvis exit code: {jarvis_proc.poll()}")
@@ -169,7 +191,7 @@ def main() -> int:
                 print("--- Jarvis log (tail) ---")
                 print(tail)
             return 1
-        if not _wait_for_file(mouse_ready, mouse_proc, timeout_s=300.0):
+        if not _wait_for_file(mouse_ready, mouse_proc, timeout_s=mouse_ready_timeout_s):
             print("Mouse control failed to become ready.")
             try:
                 print(f"Mouse exit code: {mouse_proc.poll()}")
