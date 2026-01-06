@@ -154,7 +154,6 @@ def main() -> int:
     env["JARVIS_START_FILE"] = jarvis_start
     env["JARVIS_SHUTDOWN_FILE"] = jarvis_shutdown
 
-    # Ensure early and frequent log flushes (useful during long model downloads).
     env.setdefault("PYTHONUNBUFFERED", "1")
 
     def _get_timeout_s(env_name: str, default_s: float) -> float:
@@ -170,7 +169,6 @@ def main() -> int:
     mouse_ready_timeout_s = _get_timeout_s("JARVIS_MOUSE_READY_TIMEOUT_S", 300.0)
 
     jarvis_log = open(jarvis_log_path, "ab", buffering=0)
-    # Capture both stdout/stderr to the log file so readiness failures have actionable output.
     jarvis_proc = subprocess.Popen(
         [sys.executable, "-u", jarvis_script],
         env=env,
@@ -206,7 +204,6 @@ def main() -> int:
         _speak_ready_phrase("Everything is ready to run")
         _touch(jarvis_start, "start\n")
 
-        # Supervisor loop
         while True:
             if jarvis_proc.poll() is not None:
                 break

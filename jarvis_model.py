@@ -1,7 +1,14 @@
-import sys,subprocess,threading,platform,shutil,queue,time,re,textwrap,os,json,tempfile,ctypes,traceback
+import sys,subprocess,threading,platform,shutil,queue,time,re,textwrap,os,json,tempfile,ctypes
 from pathlib import Path
 from array import array
 print("Process starting please wait. This might take a while.")
+
+try:
+    if "HF_HOME" not in os.environ:
+        os.environ["HF_HOME"]=os.path.join(tempfile.gettempdir(),"jarvis_hf")
+except Exception:
+    pass
+
 try:
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -644,7 +651,6 @@ class LiveSpeechToText:
             return
 
 MODEL_NAME="Qwen/Qwen2.5-0.5B-Instruct"
-OUTDIR=Path("qwen-model")
 HISTORY_LEN=3
 MAX_TOKENS=256
 TEMPERATURE=0.7
@@ -660,71 +666,26 @@ def progress_cb_print(m):
     except: print(m)
 
 class ModelManager:
-    def __init__(self,name,outdir): self.name=name; self.outdir=outdir; self.model=None; self.tokenizer=None
-    def model_exists(self):
-        p=self.outdir
-        if not p.is_dir(): return False
-        if not (p/"config.json").exists(): return False
-        weights=list(p.glob("pytorch_model*.bin"))+list(p.glob("*.safetensors"))+list(p.glob("pytorch_model-*.bin"))
-        return len(weights)>0
-    def download_model(self,progress_cb=None):
-        self.outdir.mkdir(parents=True,exist_ok=True)
-        if progress_cb: progress_cb("Downloading model snapshot (this may take a while)...")
-        try:
-            from huggingface_hub import snapshot_download
-        except Exception:
-            # Fallback to Transformers download+save path
-            if progress_cb: progress_cb("huggingface_hub not available; falling back to Transformers download...")
-            tok=AutoTokenizer.from_pretrained(self.name,use_fast=True)
-            model=AutoModelForCausalLM.from_pretrained(self.name,low_cpu_mem_usage=True)
-            tok.save_pretrained(self.outdir); model.save_pretrained(self.outdir)
-            if progress_cb: progress_cb("Download complete")
-            return self.outdir
-
-        # Download only the typical files we need.
-        allow_patterns=[
-            "*.safetensors",
-            "*.bin",
-            "config.json",
-            "generation_config.json",
-            "tokenizer*",
-            "special_tokens_map.json",
-            "merges.txt",
-            "vocab.json",
-            "chat_template.jinja",
-            "*.model",
-        ]
-        snapshot_download(
-            repo_id=self.name,
-            local_dir=str(self.outdir),
-            local_dir_use_symlinks=False,
-            allow_patterns=allow_patterns,
-            resume_download=True,
-        )
-        if progress_cb: progress_cb("Download complete")
-        return self.outdir
+    def __init__(self,name): self.name=name; self.model=None; self.tokenizer=None
     def load_model(self,progress_cb=None):
         device="cuda" if torch.cuda.is_available() else "cpu"
         if progress_cb: progress_cb(f"Loading tokenizer to {device}...")
-        try:
-            tokenizer=AutoTokenizer.from_pretrained(self.outdir,use_fast=True,fix_mistral_regex=True)
-        except TypeError:
-            tokenizer=AutoTokenizer.from_pretrained(self.outdir,use_fast=True)
+        tokenizer=AutoTokenizer.from_pretrained(self.name,use_fast=True)
         if device=="cuda":
             try:
                 if progress_cb: progress_cb("Loading model with device_map=auto...")
-                model=AutoModelForCausalLM.from_pretrained(self.outdir,device_map="auto",torch_dtype=torch.float16)
+                model=AutoModelForCausalLM.from_pretrained(self.name,device_map="auto",torch_dtype=torch.float16)
             except:
                 if progress_cb: progress_cb("Fallback: loading model and moving to cuda...")
-                model=AutoModelForCausalLM.from_pretrained(self.outdir); model.to("cuda")
+                model=AutoModelForCausalLM.from_pretrained(self.name); model.to("cuda")
         else:
             if progress_cb: progress_cb("Loading model to cpu...")
-            model=AutoModelForCausalLM.from_pretrained(self.outdir); model.to("cpu")
+            model=AutoModelForCausalLM.from_pretrained(self.name); model.to("cpu")
         model.eval(); self.model=model; self.tokenizer=tokenizer
         if progress_cb: progress_cb("Model ready")
         return model,tokenizer
 
-manager=ModelManager(MODEL_NAME,OUTDIR)
+manager=ModelManager(MODEL_NAME)
 
 def build_prompt(system,history,user_msg):
     try:
@@ -745,69 +706,8 @@ def safe_decode(gen,inputs_len):
     except: return ""
 
 def lazy_load_model():
-    try:
-        manager.load_model(progress_cb=progress_cb_print)
-        loading_complete.set()
-        return
-    except Exception as e:
-        print("Failed to load model:",e)
-        try:
-            traceback.print_exc()
-        except Exception:
-            pass
-
-    err_txt=str(e).lower() if 'e' in locals() else ""
-    looks_corrupt=(
-        "incomplete metadata" in err_txt
-        or "file not fully covered" in err_txt
-        or "error while deserializing header" in err_txt
-        or "safetensors" in err_txt
-        or "unexpected eof" in err_txt
-    )
-    if looks_corrupt and manager.outdir.is_dir():
-        print("Local model appears corrupted/incomplete. Deleting and re-downloading...")
-        try:
-            shutil.rmtree(manager.outdir)
-        except Exception as e2:
-            print("Failed to delete model directory:",e2)
-        try:
-            manager.download_model(progress_cb=progress_cb_print)
-            manager.load_model(progress_cb=progress_cb_print)
-            loading_complete.set()
-            return
-        except Exception as e3:
-            print("Re-download/load failed:",e3)
-            try:
-                traceback.print_exc()
-            except Exception:
-                pass
-
-    loading_complete.set()
-
-def download_and_load():
-    try:
-        manager.download_model(progress_cb=progress_cb_print)
-        manager.load_model(progress_cb=progress_cb_print)
-        loading_complete.set()
-    except Exception as e:
-        print("Download/load failed:",e)
-        try:
-            traceback.print_exc()
-        except Exception:
-            pass
-        loading_complete.set()
-
-def delete_model():
-    try:
-        if manager.model_exists():
-            print("Deleting model files...")
-            shutil.rmtree(manager.outdir)
-            manager.model=None; manager.tokenizer=None
-            print("Model deleted successfully. Type '/add' to download it again.")
-        else:
-            print("No model found to delete.")
-    except Exception as e:
-        print("Delete failed:",e)
+    try: manager.load_model(progress_cb=progress_cb_print); loading_complete.set()
+    except Exception as e: print("Failed to load model:",e); loading_complete.set()
 
 def generate_and_stream(prompt,user_text):
     try:
@@ -863,11 +763,7 @@ def generate_and_stream(prompt,user_text):
     except Exception as e:
         print("Error:",e)
 
-if manager.model_exists():
-    threading.Thread(target=lazy_load_model,daemon=True).start()
-else:
-    print("Model not found locally. Downloading and loading it now...")
-    threading.Thread(target=download_and_load,daemon=True).start()
+threading.Thread(target=lazy_load_model,daemon=True).start()
 
 
 def _strip_wake_words(text: str) -> str:
