@@ -668,10 +668,6 @@ class ModelManager:
         weights=list(p.glob("pytorch_model*.bin"))+list(p.glob("*.safetensors"))+list(p.glob("pytorch_model-*.bin"))
         return len(weights)>0
     def download_model(self,progress_cb=None):
-        """Download model artifacts into outdir.
-
-        Uses huggingface_hub snapshot download for resumable, on-disk downloads.
-        """
         self.outdir.mkdir(parents=True,exist_ok=True)
         if progress_cb: progress_cb("Downloading model snapshot (this may take a while)...")
         try:
@@ -710,7 +706,6 @@ class ModelManager:
     def load_model(self,progress_cb=None):
         device="cuda" if torch.cuda.is_available() else "cpu"
         if progress_cb: progress_cb(f"Loading tokenizer to {device}...")
-        # Some tokenizers (e.g., Mistral) may require fix_mistral_regex=True.
         try:
             tokenizer=AutoTokenizer.from_pretrained(self.outdir,use_fast=True,fix_mistral_regex=True)
         except TypeError:
@@ -761,7 +756,6 @@ def lazy_load_model():
         except Exception:
             pass
 
-    # If the local directory exists but is corrupt/partial, delete and re-download once.
     err_txt=str(e).lower() if 'e' in locals() else ""
     looks_corrupt=(
         "incomplete metadata" in err_txt
