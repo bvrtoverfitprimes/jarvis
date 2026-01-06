@@ -54,6 +54,41 @@ def _wait_for_file(p: str, proc: subprocess.Popen | None, timeout_s: float) -> b
     return False
 
 
+def _wait_for_file_with_progress(
+    p: str,
+    proc: subprocess.Popen | None,
+    timeout_s: float,
+    label: str,
+    log_path: str | None = None,
+    tick_s: float = 3.0,
+) -> bool:
+    started = time.time()
+    deadline = started + float(timeout_s)
+    next_tick = started
+    last_tail = ""
+    while time.time() < deadline:
+        if proc is not None and proc.poll() is not None:
+            return False
+        try:
+            if p and os.path.exists(p):
+                return True
+        except Exception:
+            return True
+        now = time.time()
+        if now >= next_tick:
+            elapsed = int(now - started)
+            remaining = max(0, int(deadline - now))
+            print(f"Waiting for {label}... {elapsed}s elapsed, {remaining}s remaining")
+            if log_path:
+                tail = _tail_text_file(log_path, max_lines=12)
+                if tail and tail != last_tail:
+                    print(tail)
+                    last_tail = tail
+            next_tick = now + float(tick_s)
+        time.sleep(0.05)
+    return False
+
+
 def _speak_ready_phrase(text: str) -> None:
     try:
         import win32com.client 
@@ -178,7 +213,13 @@ def main() -> int:
     )
 
     try:
-        if not _wait_for_file(jarvis_model_ready, jarvis_proc, timeout_s=jarvis_ready_timeout_s):
+        if not _wait_for_file_with_progress(
+            jarvis_model_ready,
+            jarvis_proc,
+            timeout_s=jarvis_ready_timeout_s,
+            label="Jarvis model",
+            log_path=jarvis_log_path,
+        ):
             print("Jarvis failed to become ready.")
             try:
                 print(f"Jarvis exit code: {jarvis_proc.poll()}")
@@ -189,7 +230,13 @@ def main() -> int:
                 print("--- Jarvis log (tail) ---")
                 print(tail)
             return 1
-        if not _wait_for_file(mouse_ready, mouse_proc, timeout_s=mouse_ready_timeout_s):
+        if not _wait_for_file_with_progress(
+            mouse_ready,
+            mouse_proc,
+            timeout_s=mouse_ready_timeout_s,
+            label="mouse control",
+            log_path=mouse_log_path,
+        ):
             print("Mouse control failed to become ready.")
             try:
                 print(f"Mouse exit code: {mouse_proc.poll()}")
