@@ -1,16 +1,6 @@
-# JARVIS
+# Mouse Control
 
-Offline voice assistant with optional camera-based mouse control.
-
-This project runs a local language model for responses, uses offline speech to text for commands, and speaks replies using Windows SAPI. It can also run a MediaPipe based hand and face tracker to control the mouse and trigger a few gestures.
-
-## What it does
-
-- Offline speech to text using Vosk
-- Text to speech using Windows SAPI (smooth, interruptible)
-- Local LLM inference using Transformers (Qwen2.5 0.5B Instruct by default)
-- Mouse control using MediaPipe Tasks (hand and face landmarks)
-- Unified launcher that waits for everything to load, then starts listening
+Camera-based mouse control and gestures using MediaPipe Tasks.
 
 ## Quick start (Windows)
 
@@ -28,62 +18,19 @@ python -m pip install -U pip
 pip install -r requirements.txt
 ```
 
-### 3) Download the offline speech model (Vosk)
-
-The assistant expects the Vosk model at:
-
-- `models/vosk-model-small-en-us-0.15/`
-
-You can download it automatically by running the helper once:
+### 3) Run
 
 ```powershell
-python live_speech_to_text.py
+python mouse_control.py
 ```
-
-Let it finish downloading and extracting, then press Ctrl+C.
-
-### 4) Run the unified launcher
-
-```powershell
-python united_run.py
-```
-
-When both the LLM and mouse control are ready, it will say:
-
-- Everything is ready to run
-
-After that, Jarvis starts listening.
-
-## How to use
-
-### Wake word
-
-- Jarvis
-- Hey Jarvis
-
-Then speak your command or question.
-
-### Voice controls
-
-- `stop` stops speaking and cancels the current generation
-- `exit` or `quit` terminates everything
-- `type ... enter` types into the currently focused window, then presses Enter
-
-Tip: for typing, click the target app first (Notepad, browser address bar, chat box). Keyboard injection can be blocked if the target app runs elevated while Jarvis does not.
 
 ### Mouse control gestures
-
-Mouse control runs in the background when using `united_run.py`.
-
 - Open palm (high five) triggers a full shutdown
 - Fist triggers Alt+Tab
 
 ## Repo layout
 
-- `united_run.py`: starts mouse control and Jarvis, waits for readiness, then starts listening
-- `jarvis_model.py`: main assistant loop (STT, LLM, TTS, stop/exit, typing)
 - `mouse_control.py`: camera based mouse control and gestures
-- `live_speech_to_text.py`: standalone offline STT utility (also useful for downloading the Vosk model)
 - `face_landmarker.task`, `hand_landmarker.task`: MediaPipe task files
 
 Supporting files:

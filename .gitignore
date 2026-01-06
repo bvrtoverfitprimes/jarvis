@@ -218,6 +218,7 @@ Desktop.ini
 qwen-model/
 models/vosk-model-*/
 models/*.zip
+vosk-model-small-en-us-0.15/
 
 # Common ML caches
 .cache/

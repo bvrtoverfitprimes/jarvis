@@ -3,17 +3,5 @@ opencv-python==4.10.0.84
 numpy>=1.26,<2
 protobuf>=4.25,<5
 absl-py>=2.1
-
-vosk==0.3.45
-sounddevice>=0.5,<0.6
-
-torch>=2.0
-transformers>=4.41
-accelerate>=0.31
-sentencepiece>=0.2
-safetensors>=0.4
-huggingface-hub>=0.23
-
 pywin32>=306; sys_platform == 'win32'
 pywinauto==0.6.9; sys_platform == 'win32'
-pyttsx3>=2.90
