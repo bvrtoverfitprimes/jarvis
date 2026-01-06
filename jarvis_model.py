@@ -668,7 +668,7 @@ def progress_cb_print(m):
 class ModelManager:
     def __init__(self,name): self.name=name; self.model=None; self.tokenizer=None
     def load_model(self,progress_cb=None):
-        device="cuda" if torch.cuda.is_available() else "cpu"
+        device="cpu"
         if progress_cb: progress_cb(f"Loading tokenizer to {device}...")
         tokenizer=AutoTokenizer.from_pretrained(self.name,use_fast=True)
         if device=="cuda":
@@ -680,7 +680,7 @@ class ModelManager:
                 model=AutoModelForCausalLM.from_pretrained(self.name); model.to("cuda")
         else:
             if progress_cb: progress_cb("Loading model to cpu...")
-            model=AutoModelForCausalLM.from_pretrained(self.name); model.to("cpu")
+            model=AutoModelForCausalLM.from_pretrained(self.name,low_cpu_mem_usage=True); model.to("cpu")
         model.eval(); self.model=model; self.tokenizer=tokenizer
         if progress_cb: progress_cb("Model ready")
         return model,tokenizer

@@ -57,16 +57,18 @@ def _wait_for_file(p: str, proc: subprocess.Popen | None, timeout_s: float) -> b
 def _wait_for_file_with_progress(
     p: str,
     proc: subprocess.Popen | None,
-    timeout_s: float,
+    timeout_s: float | None,
     label: str,
     log_path: str | None = None,
     tick_s: float = 3.0,
 ) -> bool:
     started = time.time()
-    deadline = started + float(timeout_s)
+    deadline = (started + float(timeout_s)) if timeout_s is not None else None
     next_tick = started
     last_tail = ""
-    while time.time() < deadline:
+    while True:
+        if deadline is not None and time.time() >= deadline:
+            return False
         if proc is not None and proc.poll() is not None:
             return False
         try:
@@ -77,8 +79,11 @@ def _wait_for_file_with_progress(
         now = time.time()
         if now >= next_tick:
             elapsed = int(now - started)
-            remaining = max(0, int(deadline - now))
-            print(f"Waiting for {label}... {elapsed}s elapsed, {remaining}s remaining")
+            if deadline is None:
+                print(f"Waiting for {label}... {elapsed}s elapsed")
+            else:
+                remaining = max(0, int(deadline - now))
+                print(f"Waiting for {label}... {elapsed}s elapsed, {remaining}s remaining")
             if log_path:
                 tail = _tail_text_file(log_path, max_lines=12)
                 if tail and tail != last_tail:
@@ -191,14 +196,19 @@ def main() -> int:
 
     env.setdefault("PYTHONUNBUFFERED", "1")
 
-    def _get_timeout_s(env_name: str, default_s: float) -> float:
+    def _get_timeout_s(env_name: str, default_s: float) -> float | None:
         try:
-            v = float(env.get(env_name, ""))
-            if v <= 0:
-                return default_s
+            raw = env.get(env_name, "")
+            if raw is None or str(raw).strip() == "":
+                return None
+            v = float(raw)
+            if v == 0:
+                return None
+            if v < 0:
+                return None
             return v
         except Exception:
-            return default_s
+            return None
 
     jarvis_ready_timeout_s = _get_timeout_s("JARVIS_READY_TIMEOUT_S", 1800.0)
     mouse_ready_timeout_s = _get_timeout_s("JARVIS_MOUSE_READY_TIMEOUT_S", 300.0)
