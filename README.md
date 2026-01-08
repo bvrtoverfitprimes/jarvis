@@ -2,14 +2,16 @@
 
 A unified AI assistant combining voice interaction via Qwen2.5 LLM with gesture-based mouse control. JARVIS integrates intelligent conversation, text-to-speech synthesis, and camera-based hand gesture recognition to create a seamless multimodal interface.
 
+This project has been made such that users all over the world have unlimited access to state of the art computing power and a modular assistant. Not everybody in the world has massive computing resources and not everything on a computer is quickly usage. As inspired from the movie Iron Man, Jarvis can be spoken with and additionally, the user may control their screen simply with hand gestures in the air. This permits ease of computer usage and simplifies daily life.
+
 ## Overview
 
 JARVIS consists of two integrated components:
 
 - **jarvis.py**: Voice-activated AI assistant powered by Qwen2.5-0.5B-Instruct with real-time speech recognition (Vosk) and text-to-speech synthesis. Activate with "Jarvis" spoken aloud, provide commands, and receive intelligent responses.
-- **mouse_control.py**: Camera-based gesture interface using MediaPipe hand and face landmark detection. Control your cursor through hand position and trigger actions via specific gestures (open palm for shutdown, fist for Alt+Tab).
+- **mouse_control.py**: Camera-based gesture interface using MediaPipe hand and face landmark detection. Control your cursor through hand position and trigger actions via specific gestures (tapping your pointer and thumb fingers for a click or drag, open palm for shutdown, fist for Alt+Tab).
 
-Both run simultaneously in a unified session managed by **runcentral.py**, which ensures that exiting either component gracefully terminates the entire application.
+Both run simultaneously in a unified session managed by **runcentral.py**, which ensures that exiting either component terminates the entire application cleanly without causing other errors.
 
 ## How It Works
 
@@ -17,6 +19,8 @@ Both run simultaneously in a unified session managed by **runcentral.py**, which
    - Listens for the wake word "Jarvis" via real-time speech recognition
    - Upon detection, enters active mode and processes your spoken command
    - Generates a response using the Qwen2.5 LLM
+   - The LLM has been system prompt tuned to keep responses short, address the user with respect and say "sir" and be polite.
+   - The LLM's hyperparameters have been specifically set such that responses are quickly generated on just a cpu.
    - Streams the response as speech via system text-to-speech
    - Say "exit" to terminate both this component and mouse control
 
@@ -121,3 +125,9 @@ python mouse_control.py
 - **Microphone not detected:** Check system audio settings and ensure microphone permissions are granted.
 - **Models downloading slowly:** Large models (Qwen2.5 LLM, voice recognition) may take several minutes on first run.
 - **Low gesture recognition:** Ensure adequate lighting and maintain hand visibility in camera frame.
+
+## Future Plans
+
+- Add commands to Jarvis where Jarvis can take over your screen and operate major projects or smaller tasks safely so the user can just task Jarvis while it does the manual work.
+- Refine Jarvis and add the Iron Legion again inspired by the movie Iron man such Jarvis is on every system in the house and operates everywhere, effectively making workplaces or homes seem alive and powered by a LLM.
+- Finetune Jarvis with training: migrate out of Qwen and use a cutom created Jarvis that is even better with conversation, math, sciences, and acts as a true overlooking assistant.
